@@ -1,0 +1,2 @@
+# nautible-kong-serverless
+KEDAと組み合わせることで、HTTPリクエストベースのサービスをサーバレス化するプラグイン
