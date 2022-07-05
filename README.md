@@ -23,11 +23,11 @@ Podを利用しないときはPod数0とし、HTTPリクエストをトリガー
 ```text
 $HOME
 ├ keda
-│  ├ INSTALL.md ・・・ インストール説明ドキュメント
+│  ├ INSTALL.md ・・・ KEDAインストール説明ドキュメント
 │  ├ scaledobject_aws.yaml ・・・ AWS用ScaledObjectデプロイ用マニフェストファイル
 │  └ scaledobject_local.yaml ・・・ ローカル用ScaledObjectデプロイ用マニフェストファイル（RabbitMQ接続）
 ├ kong
-│  ├ INSTALL.md ・・・ インストール説明ドキュメント
+│  ├ INSTALL.md ・・・ Kong Gatewayインストール説明ドキュメント
 │  └ values.yaml ・・・ HELM設定ファイル
 ├ plugin
 │  ├ cmd ・・・ プラグインのエントリーポイント
@@ -42,8 +42,7 @@ $HOME
 │  ├ service.yaml ・・・ サンプルアプリケーションのService
 │  └ README.md ・・・ サンプルアプリケーションの説明
 ├ LICENSE
-├ README.md
-└ skaffold.yaml
+└ README.md
 ```
 
 ## RabbitMQの準備（Minikube）
@@ -114,53 +113,7 @@ nautible-kong-serverless
 
 ## プラグイン作成
 
-pluginディレクトリ配下にプラグイン本体のコードを作成する。
-
-plugin
-├ cmd ・・・ エントリーポイント
-├ manifests ・・・ マニフェストファイル
-├ package ・・・ パッケージング用コード（Dockerfile）
-└ pkg ・・・ コード本体
-
-### Dockerfile
-
-プラグインをkongイメージに配置したカスタムイメージを作成するためのDockerfileを用意する。
-
-```docker
-FROM kong/go-plugin-tool:latest-alpine-latest as builder
-ENV GO111MODULE=on
-
-RUN mkdir /go-plugins
-COPY plugin/go.mod /go-plugins/
-COPY plugin/pkg/ /go-plugins/pkg/
-RUN cd /go-plugins && \
-    go build -o /go-plugins/bin/serverless pkg/main.go
-
-FROM kong:2.8.1
-
-COPY --from=builder /go-plugins/bin/serverless /usr/local/bin/serverless
-```
-
-## build
-
-プラグインをローカルでビルド(バージョンは都度変更)
-
-```bash
-cd plugin
-docker build -t nautible-kong-serverless:v0.1.0 -f ./package/Dockerfile .
-```
-
-## push
-
-プラグインをECRのパブリックリポジトリにPush
-
-```bash
-aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/nautible-kong-serverless
-docker tag nautible-kong-serverless:v0.1.0 public.ecr.aws/nautible/nautible-kong-serverless:v0.1.0
-docker push public.ecr.aws/nautible/nautible-kong-serverless:v0.1.0
-```
-
-※ Pushする前にレジストリに対して認証おく必要あり [参考](https://docs.aws.amazon.com/ja_jp/AmazonECR/latest/userguide/getting-started-cli.html)
+[plugin/README.md](./plugin/README.md)を参照
 
 ## ローカル（Minikube）での実行
 
@@ -180,22 +133,21 @@ kubectl apply -f keda/scaledobject_local.yaml
 
 ### Kong Plugin設定を導入
 
-pubsub.yamlにRabbitMQの接続情報を記載しているので、パスワード部分のみ現在のRabbitMQのパスワードに変更して下記を実行する。
+plugin/manifests/pubsub.yamlにRabbitMQの接続情報を記載しているので、パスワード部分のみ現在のRabbitMQのパスワードに変更して下記を実行する。
 
 ```bash
 kubectl apply -f plugin/manifests/.
 ```
 
-## skaffold
+## デプロイしているコンテナを更新
 
 ```bash
-skaffold dev
+helm upgrade serverless-kong kong/kong -n kong --values ./kong/values.yaml
 ```
-
 
 ### ExternalIPの設定
 
-下記コマンド実行後、
+下記コマンド実行（sudoパスワードを聞かれた際は入力する）
 
 ```bash
 minikube tunnel
@@ -204,5 +156,5 @@ minikube tunnel
 ### ブラウザからアクセス
 
 ```bash
-http://localhost/kong/consumer
+http://localhost/kong/
 ```
