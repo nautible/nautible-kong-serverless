@@ -6,20 +6,16 @@ KEDAと組み合わせることで、HTTPリクエストベースのサービス
 
 Podを利用しないときはPod数0とし、HTTPリクエストをトリガーにPodを起動するためのプラグイン。KEDAと組み合わせて利用する。
 
-## 仕様
-
-
 ## 構成
-
-TODO 図
 
 - APIGateway
   - Kong 2.8
 - Queue
   - RabbitMQ（Minikube）
   - SQS(AWS)
-  - ServiceBus(Azure)
-- Replica Control
+  - ServiceBus(Azure ※今後対応予定)
+  - Pub/Sub(GoogleCloud ※今後対応予定)
+- Pod AutoScaler
   - KEDA
 
 ## フォルダ構成
@@ -27,9 +23,27 @@ TODO 図
 ```text
 $HOME
 ├ keda
-│  ├ deploy.yaml ・・・ KEDAのデプロイ用マニフェストファイル
-│  └ scaledobject.yaml ・・・ サンプルScaledObject（RabbitMQ接続）
+│  ├ INSTALL.md ・・・ インストール説明ドキュメント
+│  ├ scaledobject_aws.yaml ・・・ AWS用ScaledObjectデプロイ用マニフェストファイル
+│  └ scaledobject_local.yaml ・・・ ローカル用ScaledObjectデプロイ用マニフェストファイル（RabbitMQ接続）
 ├ kong
+│  ├ INSTALL.md ・・・ インストール説明ドキュメント
+│  └ values.yaml ・・・ HELM設定ファイル
+├ plugin
+│  ├ cmd ・・・ プラグインのエントリーポイント
+│  ├ manifests ・・・ サンプルマニフェストファイル
+│  ├ package ・・・ Dockerfile
+│  ├ pkg ・・・ カスタマイズ処理の本体
+│  ├ go.mod ・・・ 導入モジュール
+│  └ go.sum・・・ 依存モジュールのパスやバージョン
+├ sample
+│  ├ configmap.yaml ・・・ マウントするHTMLファイルを定義したConfigmap
+│  ├ deployment.yaml ・・・ サンプルアプリケーション（Nginx）のDeployment
+│  ├ service.yaml ・・・ サンプルアプリケーションのService
+│  └ README.md ・・・ サンプルアプリケーションの説明
+├ LICENSE
+├ README.md
+└ skaffold.yaml
 ```
 
 ## RabbitMQの準備（Minikube）
@@ -47,6 +61,17 @@ helm install keda-queue bitnami/rabbitmq
 echo "Password      : $(kubectl get secret --namespace default keda-queue-rabbitmq -o jsonpath="{.data.rabbitmq-password}" | base64 --decode)"
 ```
 
+### ログイン
+
+ポートフォワードでログイン画面を表示する
+
+kubectl port-forward -n default svc/keda-queue-rabbitmq 15672:15672
+
+```text
+user: user
+password: 上記で確認したパスワード
+```
+
 ### キューの準備
 
 RabbitMQにログインして、下記設定を追加する
@@ -58,7 +83,7 @@ RabbitMQにログインして、下記設定を追加する
 - Durability: Durable
 - Auto delete: No
 - arguments
-  - x-message-ttl: 30000
+  - x-message-ttl: 30000 (Number)
 
 #### Exchanges
 
@@ -70,7 +95,6 @@ RabbitMQにログインして、下記設定を追加する
 
 作成後、serverlessキューをBindする
 
-
 ## リポジトリ作成
 
 ECRパブリックリポジトリにプラグイン用のリポジトリを作成する。（Terraformによる作成を推奨）
@@ -79,28 +103,16 @@ ECRパブリックリポジトリにプラグイン用のリポジトリを作�
 nautible-kong-serverless
 ```
 
-## kong
+## KEDAの導入
 
-## kongのマニフェスト取得（DB Less）
+[keda/INSTALL.md](./keda/INSTALL.md)を参照
 
-```bash
-curl https://raw.githubusercontent.com/Kong/kubernetes-ingress-controller/master/deploy/single/all-in-one-dbless.yaml
-```
 
-取得したYAMLを種別（Kind）ごとにファイルを分け、kongディレクトリ以下に配置（カスタムリソースはkong/crds配下）
+## Kongの導入
 
-kong/deployment.yamlのname: proxyコンテナの環境変数に下記を追加する
+[kong/INSTALL.md](./kong/INSTALL.md)を参照
 
-```yaml
-        - name: KONG_PLUGINS
-          value: bundled, serverless
-        - name: KONG_PLUGINSERVER_NAMES
-          value: serverless
-        - name: KONG_PLUGINSERVER_SERVERLESS_QUERY_CMD
-          value: /usr/local/bin/serverless -dump
-```
-
-## コード
+## プラグイン作成
 
 pluginディレクトリ配下にプラグイン本体のコードを作成する。
 
@@ -109,7 +121,6 @@ plugin
 ├ manifests ・・・ マニフェストファイル
 ├ package ・・・ パッケージング用コード（Dockerfile）
 └ pkg ・・・ コード本体
-
 
 ### Dockerfile
 
@@ -125,14 +136,14 @@ COPY plugin/pkg/ /go-plugins/pkg/
 RUN cd /go-plugins && \
     go build -o /go-plugins/bin/serverless pkg/main.go
 
-FROM kong:2.8
+FROM kong:2.8.1
 
 COPY --from=builder /go-plugins/bin/serverless /usr/local/bin/serverless
 ```
 
 ## build
 
-プラグインをローカルでビルド
+プラグインをローカルでビルド(バージョンは都度変更)
 
 ```bash
 cd plugin
@@ -143,35 +154,48 @@ docker build -t nautible-kong-serverless:v0.1.0 -f ./package/Dockerfile .
 
 プラグインをECRのパブリックリポジトリにPush
 
-※ タグ名は
-
 ```bash
 aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/nautible-kong-serverless
 docker tag nautible-kong-serverless:v0.1.0 public.ecr.aws/nautible/nautible-kong-serverless:v0.1.0
 docker push public.ecr.aws/nautible/nautible-kong-serverless:v0.1.0
 ```
 
-## ローカル（Minikubeでの実行）
+※ Pushする前にレジストリに対して認証おく必要あり [参考](https://docs.aws.amazon.com/ja_jp/AmazonECR/latest/userguide/getting-started-cli.html)
 
-### kongデプロイ
-
-### RabbitMQデプロイ
-
-### KEDAデプロイ
+## ローカル（Minikube）での実行
 
 ### サンプルアプリケーションデプロイ
 
-Minikubeにサンプルアプリケーションをデプロイする。
-
 ```bash
-eval $(minikube docker-env)
-cd sample_consumer
-docker build -t consumer:v0.1.0 -f ./package/Dockerfile .
-cd manifest
-kubectl apply -f .
+kubectl apply -f sample/.
 ```
 
+### KEDAのScaledObjectを導入
+
+scaledobject_local.yamlのhostにRabbitMQの接続情報を記載しているので、パスワード部分のみ現在のRabbitMQのパスワードに変更して下記を実行する。
+
+```bash
+kubectl apply -f keda/scaledobject_local.yaml
+```
+
+### Kong Plugin設定を導入
+
+pubsub.yamlにRabbitMQの接続情報を記載しているので、パスワード部分のみ現在のRabbitMQのパスワードに変更して下記を実行する。
+
+```bash
+kubectl apply -f plugin/manifests/.
+```
+
+## skaffold
+
+```bash
+skaffold dev
+```
+
+
 ### ExternalIPの設定
+
+下記コマンド実行後、
 
 ```bash
 minikube tunnel

@@ -2,7 +2,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: consumer-scaledobject
-  namespace: default
+  namespace: kong
 spec:
   scaleTargetRef:
     name: consumer
@@ -11,8 +11,9 @@ spec:
   minReplicaCount: 0   # Optional. Default: 0
   maxReplicaCount: 3   # Optional. Default: 100
   triggers:
-  - type: rabbitmq
+  - type: aws-sqs-queue
     metadata:
-      queueName: serverless
-      host: 'amqp://user:<password>@keda-queue-rabbitmq.default.svc.cluster.local:5672'
-      queueLength  : '10'
+      queueURL: serverless
+      queueLength: "10"
+      awsRegion: "ap-northeast-1"
+      identityOwner: operator

@@ -25,7 +25,7 @@ type Config struct {
 }
 
 func main() {
-	loggingSettings("/tmp/log.txt")
+	loggingSettings("/tmp/plugin.log")
 	server.StartServer(func() interface{} {
 		return &Config{}
 	}, "0.1", 1)
@@ -62,9 +62,5 @@ func (conf Config) Access(kong *pdk.PDK) {
 
 		}
 	}
-
-	// subscribeQueue(channel, conf)
-
 	log.Println("end Access")
-
 }

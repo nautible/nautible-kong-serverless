@@ -2,12 +2,13 @@ apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
 metadata:
   name: serverless
+  namespace: kong
 config:
-  count: 300
-  interval: 100
+  count: 30
+  interval: 1000
   backend:
-  - target: /kong/consumer
-    health: /healthz
-    pubsub: consumer-pubsub
+  - target: /kong
+    health: /healthz.html
+    pubsub: kong-serverless-plugin
     topic: serverless
 plugin: serverless
