@@ -30,9 +30,6 @@ Kong GatewayはOSSで開発されている代表的なAPIゲートウェイの1�
   - Kong 2.8
 - Queue
   - RabbitMQ（Minikube）
-  - SQS(AWS)
-  - ServiceBus(Azure ※今後対応予定)
-  - Pub/Sub(GoogleCloud ※今後対応予定)
 - Pod AutoScaler
   - KEDA
 
