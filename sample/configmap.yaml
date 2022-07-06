@@ -4,7 +4,7 @@ metadata:
   labels:
     app: nginx-app
     name: consumer
-  name: index-html
+  name: contents
   namespace: kong
 data:
   index.html: |
@@ -17,16 +17,6 @@ data:
         kong-apigateway sample
       </body>
     </html>
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  labels:
-    app: nginx-app
-    name: consumer
-  name: healthz-html
-  namespace: kong
-data:
   healthz.html: |
     <html>
       <head>

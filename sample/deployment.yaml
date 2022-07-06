@@ -34,13 +34,13 @@ spec:
       volumes:
         - name: index-file
           configMap:
-            name: index-html
+            name: contents
             items:
             - key: "index.html"
               path: "index.html"
         - name: healthz-file
           configMap:
-            name: healthz-html
+            name: contents
             items:
             - key: "healthz.html"
               path: "healthz.html"
