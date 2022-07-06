@@ -2,6 +2,7 @@
 
 ## 構成
 
+```text
 plugin
 ├ cmd・・・ エントリーポイント
 ├ manifests ・・・ マニフェストファイル
@@ -9,6 +10,7 @@ plugin
 └ pkg ・・・ コード本体
    ├ health_check・・・ ヘルスチェック処理
    └ pubsub・・・ Publish処理
+```
 
 ### Dockerfile
 
