@@ -37,6 +37,7 @@ Kong GatewayはOSSで開発されている代表的なAPIゲートウェイの1�
 
 ```text
 $HOME
+├ assets・・・ドキュメント用画像
 ├ dapr
 │  └ INSTALL.md ・・・ Daprインストール説明ドキュメント
 ├ keda
