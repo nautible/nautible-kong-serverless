@@ -1,10 +1,28 @@
 # nautible-kong-serverless
 
-KEDAと組み合わせることで、HTTPリクエストベースのサービスをサーバレス化するプラグイン
+KEDAと組み合わせることで、HTTPリクエストベースのサービスをサーバレス化するプラグイン。
+
+Podを利用しないときはPod数0とし、HTTPリクエストをトリガーにPodを起動するためのプラグイン。KEDAと組み合わせて利用する。また、プラグインからキューへのアクセスについてはDaprを用いている。そのため、利用可能なキューとしてはDaprおよびKEDAがサポートしているものとなる。
 
 ## 概要
 
-Podを利用しないときはPod数0とし、HTTPリクエストをトリガーにPodを起動するためのプラグイン。KEDAと組み合わせて利用する。
+KEDAはイベント駆動型のアプリケーションにPod数0～Nのオートスケール機能を付与するプロダクト。リクエストがキューに溜まっている間にアプリケーションを起動し、アプリケーションがキューにリクエストを取りに行くモデルとなる。
+
+KEDAを単独で使用する場合の制約としては、下図のようにキューの保留場所がなく直接リクエストを送信されるような仕組みではPod数を0にすることができないためHTTPリクエストを受信するアプリケーションでは利用できない。
+
+![KEDAの制約](./assets/pic-202206-006.jpg)
+
+そのため、同期通信に対応しようと考えた場合、下図のようにアプリケーションの手前でリクエストをいったん保留し、KEDAがアプリケーションを起動した後にリクエストを流す仕組みが必要となる。
+
+![同期処理への対応](./assets/pic-202206-007.jpg)
+
+このリクエストをいったん保留する場所としてAPIGatewayの[Kong Gateway](https://konghq.com/products/api-gateway-platform)を利用する。
+
+Kong GatewayはOSSで開発されている代表的なAPIゲートウェイの1つで、プラグイン機構によりリクエストを受け取った際やレスポンスを返す際など、いくつかのタイミングで処理をフックして独自機能を追加することが可能となっている。そのためリクエストを後続に流す前にヘルスチェックやキューへのデータ登録などの処理を実装する。
+
+全体のアーキテクチャは下記のようになる。
+
+![全体アーキテクチャ](./assets/pic-202206-008.jpg)
 
 ## 構成
 
@@ -92,12 +110,6 @@ plugin/manifests/pubsub.yamlにRabbitMQの接続情報を記載しているの�
 kubectl apply -f plugin/manifests/.
 ```
 
-## デプロイしているコンテナを更新
-
-```bash
-helm upgrade serverless-kong kong/kong -n kong --values ./kong/values.yaml
-```
-
 ### ExternalIPの設定
 
 下記コマンド実行（sudoパスワードを聞かれた際は入力する）
@@ -110,4 +122,24 @@ minikube tunnel
 
 ```bash
 http://localhost/kong/
+```
+
+## プラグインの実装変更時手順
+
+Kongプラグインの実装を更新した際はKong Gatewayのコンテナを再作成し、最新のコンテナを再デプロイする。
+
+### デプロイしているコンテナを更新
+
+kong/values.yamlのイメージタグを更新
+
+```yaml
+image:
+  repository: 'public.ecr.aws/nautible/nautible-kong-serverless'
+  tag: 'v0.1.1' # 再作成した際に付与したタグを記載
+```
+
+再デプロイ
+
+```bash
+helm upgrade serverless-kong kong/kong -n kong --values ./kong/values.yaml
 ```

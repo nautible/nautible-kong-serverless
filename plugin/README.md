@@ -37,7 +37,7 @@ COPY --from=builder /go-plugins/bin/serverless /usr/local/bin/serverless
 
 ```bash
 cd plugin
-docker build -t nautible-kong-serverless:v0.1.0 -f ./package/Dockerfile .
+docker build -t nautible-kong-serverless:<タグ> -f ./package/Dockerfile .
 ```
 
 ## push
