@@ -30,6 +30,8 @@ Kong GatewayはOSSで開発されている代表的なAPIゲートウェイの1�
   - RabbitMQ（Minikube）
 - Pod AutoScaler
   - KEDA
+- Distributed Application Runtime
+  - Dapr
 
 ## フォルダ構成
 
@@ -68,10 +70,13 @@ ECRパブリックリポジトリにプラグイン用のリポジトリを作�
 nautible-kong-serverless
 ```
 
+## RabbitMQの導入
+
+[rabbitmq/INSTALL.md](./rabbitmq/INSTALL.md)を参照
+
 ## KEDAの導入
 
 [keda/INSTALL.md](./keda/INSTALL.md)を参照
-
 
 ## Kongの導入
 
