@@ -52,4 +52,4 @@ docker tag nautible-kong-serverless:v0.1.0 public.ecr.aws/nautible/nautible-kong
 docker push public.ecr.aws/nautible/nautible-kong-serverless:v0.1.0
 ```
 
-※ Pushする前にレジストリに対して認証おく必要あり [参考](https://docs.aws.amazon.com/ja_jp/AmazonECR/latest/userguide/getting-started-cli.html)
+※ Pushする前にレジストリに対して認証おく必要あり （[参考](https://docs.aws.amazon.com/ja_jp/AmazonECR/latest/userguide/getting-started-cli.html)）
