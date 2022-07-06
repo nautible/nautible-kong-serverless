@@ -37,6 +37,8 @@ Kong GatewayはOSSで開発されている代表的なAPIゲートウェイの1�
 
 ```text
 $HOME
+├ dapr
+│  └ INSTALL.md ・・・ Daprインストール説明ドキュメント
 ├ keda
 │  ├ INSTALL.md ・・・ KEDAインストール説明ドキュメント
 │  ├ scaledobject_aws.yaml ・・・ AWS用ScaledObjectデプロイ用マニフェストファイル
@@ -73,6 +75,10 @@ nautible-kong-serverless
 ## RabbitMQの導入
 
 [rabbitmq/INSTALL.md](./rabbitmq/INSTALL.md)を参照
+
+## Daprの導入
+
+[dapr/INSTALL.md](./dapr/INSTALL.md)を参照
 
 ## KEDAの導入
 
