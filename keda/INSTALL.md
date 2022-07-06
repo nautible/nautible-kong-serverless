@@ -1,6 +1,6 @@
-# INSTALL
+# KEDA
 
-## KEDA
+## HELMチャートからのインストール
 
 ```bash
 helm repo add kedacore https://kedacore.github.io/charts

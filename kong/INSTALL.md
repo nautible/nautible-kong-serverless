@@ -1,6 +1,6 @@
-# Kong インストール
+# Kong
 
-## HELM Install
+## HELMチャートからのインストール
 
 Helm V3 でのインストール
 
